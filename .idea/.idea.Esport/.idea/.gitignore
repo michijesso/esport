@@ -1,0 +1,25 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+# Rider ignored files
+/modules.xml
+/.idea.Esport.iml
+/projectSettingsUpdater.xml
+/contentModel.xml
+# Editor-based HTTP Client requests
+/httpRequests/
+# Datasource local storage ignored files
+/dataSources/
+/dataSources.local.xml
+# Игнорировать папки и файлы сборки
+bin/
+obj/
+
+# Игнорировать файлы настроек среды разработки
+.vs/
+.idea/
+.vscode/
+
+# Игнорировать временные файлы ОС
+Thumbs.db
+.DS_Store
