@@ -1,0 +1,6 @@
+﻿services:
+  esport.web:
+    image: esport.web
+    build:
+      context: .
+      dockerfile: Esport.Web/Dockerfile
