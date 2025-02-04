@@ -4,3 +4,9 @@
     build:
       context: .
       dockerfile: Esport.Web/Dockerfile
+
+  esport.client:
+    image: esport.client
+    build:
+      context: .
+      dockerfile: Esport.Client/Dockerfile

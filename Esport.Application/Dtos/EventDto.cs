@@ -2,12 +2,9 @@ namespace Esport.Application.Dtos;
 
 public class EventDto
 {
-    public int Id { get; set; }
+    public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
-    public int ChampionshipId { get; set; }
-    public DateOnly EventDate { get; set; }
-    public TimeOnly EventTime { get; set; }
-    public ChampionshipDto Championship { get; set; } = null!;
-    public ICollection<MarketDto> Markets { get; set; } = new List<MarketDto>();
-    public ICollection<EventParticipantDto> EventParticipants { get; set; } = new List<EventParticipantDto>();
+    public string CurrentScore { get; set; } = string.Empty;
+    public List<ParticipantDto> Participants { get; set; } = new();
+    public MarketDto Market { get; set; } = new();
 }

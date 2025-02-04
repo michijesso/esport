@@ -2,9 +2,7 @@ namespace Esport.Application.Dtos;
 
 public class SelectionDto
 {
-    public int Id { get; set; }
+    public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
-    public int MarketId { get; set; }
-    public decimal Odds { get; set; }
-    public MarketDto Market { get; set; } = null!;
+    public double Odds { get; set; }
 }
