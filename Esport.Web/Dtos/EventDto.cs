@@ -1,4 +1,4 @@
-namespace Esport.Application.Dtos;
+namespace Esport.Web.Dtos;
 
 public class EventDto
 {

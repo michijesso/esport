@@ -1,115 +1,54 @@
-using System.Collections.Concurrent;
-using System.Net;
 using System.Net.WebSockets;
-using System.Text;
-using System.Text.Json;
+using AutoMapper;
 using Esport.Domain;
+using Esport.Domain.Models;
+using Esport.Web;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Esport.Web.Controllers;
-
 [ApiController]
-[Route("api/ws")]
+[Route("api/[controller]")]
 public class EsportController : ControllerBase
 {
-    private static readonly ConcurrentDictionary<WebSocket, bool> _sockets = new();
-    private readonly IEsportService _esportService;
+    private readonly IEsportRepository<EsportEvent> _esportRepository;
+    private readonly IMapper _mapper;
+    private readonly IWebSocketService _webSocketService;
 
-    public EsportController(IEsportService esportService)
+    public EsportController(IEsportRepository<EsportEvent> esportRepository, IMapper mapper, IWebSocketService webSocketService)
     {
-        _esportService = esportService;
+        _esportRepository = esportRepository;
+        _mapper = mapper;
+        _webSocketService = webSocketService;
     }
 
-    [HttpGet("connect")]
-    public async Task Connect()
+    [HttpGet("getAllEvents")]
+    public async Task<IActionResult> GetAllEvents()
     {
         if (HttpContext.WebSockets.IsWebSocketRequest)
         {
-            using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-            _sockets.TryAdd(webSocket, true);
-            await HandleWebSocketCommunication(webSocket);
+            WebSocket webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+            _webSocketService.AddSocket(Guid.NewGuid(), webSocket);
+            await _webSocketService.HandleWebSocketAsync(webSocket);
+            return new EmptyResult();
         }
         else
         {
-            HttpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+            return BadRequest("WebSocket connection required");
         }
     }
 
-    private async Task HandleWebSocketCommunication(WebSocket webSocket)
+    [HttpGet("getEventById/{id}")]
+    public async Task<IActionResult> GetEventById(Guid id)
     {
-        var buffer = new byte[1024 * 4];
-        try
+        if (HttpContext.WebSockets.IsWebSocketRequest)
         {
-            while (webSocket.State == WebSocketState.Open)
-            {
-                var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-                if (result.MessageType == WebSocketMessageType.Text)
-                {
-                    await ProcessWebSocketMessage(webSocket, buffer[..result.Count]);
-                }
-                else if (result.MessageType == WebSocketMessageType.Close)
-                {
-                    break;
-                }
-            }
+            WebSocket webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+            _webSocketService.AddSocket(Guid.NewGuid(), webSocket);
+            await _webSocketService.HandleWebSocketAsync(webSocket);
+            return new EmptyResult(); // Возвращаем пустой результат для WebSocket-запросов
         }
-        finally
+        else
         {
-            _sockets.TryRemove(webSocket, out _);
-            await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed by server", CancellationToken.None);
-        }
-    }
-
-    private async Task ProcessWebSocketMessage(WebSocket webSocket, byte[] message)
-    {
-        var request = JsonSerializer.Deserialize<Dictionary<string, string>>(message);
-        if (request == null || !request.TryGetValue("action", out var action)) return;
-
-        switch (action)
-        {
-            case "getAllEvents":
-                await SendAllEvents(webSocket);
-                break;
-            case "getEvent":
-                if (request.TryGetValue("eventId", out var eventIdString) && Guid.TryParse(eventIdString, out var eventId))
-                {
-                    await SendEventById(webSocket, eventId);
-                }
-                break;
-        }
-    }
-
-    private async Task SendAllEvents(WebSocket webSocket)
-    {
-        await SendMessage(webSocket, _esportService.GetAllEsportEvents());
-    }
-
-    private async Task SendEventById(WebSocket webSocket, Guid eventId)
-    {
-        var eventDetails = _esportService.GetEsportEventById(eventId);
-        await SendMessage(webSocket, eventDetails);
-    }
-
-    private static async Task SendMessage<T>(WebSocket webSocket, T message)
-    {
-        var json = JsonSerializer.Serialize(message);
-        var bytes = Encoding.UTF8.GetBytes(json);
-        await webSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true,
-            CancellationToken.None);
-    }
-
-    // Метод для рассылки обновлений всем клиентам
-    public static async Task BroadcastUpdate<T>(T message)
-    {
-        var json = JsonSerializer.Serialize(message);
-        var bytes = Encoding.UTF8.GetBytes(json);
-        foreach (var socket in _sockets.Keys)
-        {
-            if (socket.State == WebSocketState.Open)
-            {
-                await socket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true,
-                    CancellationToken.None);
-            }
+            return BadRequest("WebSocket connection required");
         }
     }
 }

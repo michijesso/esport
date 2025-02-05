@@ -31,6 +31,7 @@
       <ProjectReference Include="..\Esport.Domain\Esport.Domain.csproj" />
       <ProjectReference Include="..\Esport.Infrastructure\Esport.Infrastructure.csproj" />
       <ProjectReference Include="..\Esport.Kafka.Common\Esport.Kafka.Common.csproj" />
+      <ProjectReference Include="..\Esport.Web\Esport.Web.csproj" />
     </ItemGroup>
 
     <ItemGroup>

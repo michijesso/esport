@@ -9,7 +9,7 @@ public class EsportRepository<T>(EsportDbContext context) : IEsportRepository<T>
     private readonly DbSet<T> _dbSet = context.Set<T>();
 
     // Получить сущность по ID
-    public async Task<T> GetByIdAsync(int id)
+    public async Task<T> GetByIdAsync(Guid id)
     {
         return await _dbSet.FindAsync(id);
     }

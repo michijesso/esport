@@ -1,3 +1,6 @@
+using System.Text;
+using Esport.Web;
+
 namespace Esport.Kafka.Subscriber;
 
 using System.Text.Json;
@@ -14,6 +17,7 @@ public class KafkaSubscriberService : BackgroundService
     private readonly ILogger<KafkaSubscriberService> _logger;
     private readonly KafkaConfiguration _configuration;
     private readonly IEsportRepository<EsportEvent> _esportRepository;
+    private readonly HttpClient _httpClient;
 
     public KafkaSubscriberService(KafkaConfiguration configuration,
                                     ILogger<KafkaSubscriberService> logger,
@@ -22,6 +26,7 @@ public class KafkaSubscriberService : BackgroundService
         _configuration = configuration;
         _logger = logger;
         _esportRepository = esportRepository;
+        _httpClient = new HttpClient();
 
         var config = new ConsumerConfig
         {
@@ -72,7 +77,12 @@ public class KafkaSubscriberService : BackgroundService
     private async Task ProcessMessageAsync(string message)
     {
         var data = JsonSerializer.Deserialize<EsportEvent>(message);
-        if (data != null) await _esportRepository.AddAsync(data);
+        if (data != null)
+        {
+            await _esportRepository.AddAsync(data);
+            var content = new StringContent("New events added", Encoding.UTF8, "application/json");
+            await _httpClient.PostAsync("http://localhost:5088/api/notifications", content);
+        }
         _logger.LogInformation($"Processed message: {data}");
     }
 

@@ -24,7 +24,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Esport.Application\Esport.Application.csproj" />
       <ProjectReference Include="..\Esport.Infrastructure\Esport.Infrastructure.csproj" />
     </ItemGroup>
 

@@ -1,6 +1,6 @@
-namespace Esport.Application.Dtos;
+namespace Esport.Web.Dtos;
 
-public class SportsEventDto
+public class EsportEventDto
 {
     public string Esport { get; set; } = string.Empty;
     public string League { get; set; } = string.Empty;
