@@ -1,11 +1,10 @@
-using System.Text.Json;
-using Esport.Domain;
-using Esport.Domain.Models;
-
 namespace Esport.Web.Controllers;
 
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using System.Text.Json;
+using Domain;
+using Domain.Models;
 
 [ApiController]
 [Route("api/notifications")]

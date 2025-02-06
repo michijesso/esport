@@ -5,8 +5,14 @@
       context: .
       dockerfile: Esport.Web/Dockerfile
 
-  esport.client:
-    image: esport.client
+  esport.kafka.subscriber:
+    image: esport.kafka.subscriber
     build:
       context: .
-      dockerfile: Esport.Client/Dockerfile
+      dockerfile: Esport.Kafka.Subscriber/Dockerfile
+
+  esport.generator.service:
+    image: esport.generator.service
+    build:
+      context: .
+      dockerfile: Esport.Generator.Service/Dockerfile

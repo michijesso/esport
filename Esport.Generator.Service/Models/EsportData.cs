@@ -1,6 +1,6 @@
 namespace Esport.GeneratorService.Models;
 
-public class ChampionshipData
+public class EsportData
 {
     public string Esport { get; set; }
     public string League { get; set; }

@@ -108,7 +108,7 @@ public class EsportGenerator : IEsportGenerator
         return result;
     }
     
-    private async Task<ChampionshipData> GenerateChampionshipDataAsync()
+    private async Task<EsportData> GenerateChampionshipDataAsync()
     {
         return await Task.Run(() =>
         {
@@ -120,7 +120,7 @@ public class EsportGenerator : IEsportGenerator
             var availableChampionships = _championships[selectedLeague];
             var selectedChampionship = availableChampionships[_random.Next(availableChampionships.Count)];
 
-            var championshipData = new ChampionshipData
+            var championshipData = new EsportData
             {
                 Esport = selectedEsport,
                 League = selectedLeague,

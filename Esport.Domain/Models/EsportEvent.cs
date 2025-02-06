@@ -9,7 +9,7 @@ public class EsportEvent
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     [Column("id")]
-    public Guid Id { get; set; } = new();
+    public Guid Id { get; set; }
     
     [Column("esport")]
     public string Esport { get; set; }
