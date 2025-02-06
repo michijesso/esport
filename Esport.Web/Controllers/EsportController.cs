@@ -23,7 +23,6 @@ public class EsportController : ControllerBase
         if (HttpContext.WebSockets.IsWebSocketRequest)
         {
             WebSocket webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-            _webSocketService.AddSocket(Guid.NewGuid(), webSocket);
             await _webSocketService.HandleWebSocketAsync(webSocket);
             return Ok();
         }

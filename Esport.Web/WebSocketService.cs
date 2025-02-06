@@ -9,7 +9,7 @@ using Domain.Models;
 
 public class WebSocketService : IWebSocketService
 {
-    private readonly ConcurrentDictionary<string, WebSocket> _sockets = new();
+    private readonly ConcurrentDictionary<Guid, WebSocket> _sockets = new();
     private readonly IServiceProvider _serviceProvider;
 
     public WebSocketService(IServiceProvider serviceProvider)
@@ -19,10 +19,10 @@ public class WebSocketService : IWebSocketService
 
     public void AddSocket(Guid connectionId, WebSocket socket)
     {
-        _sockets[connectionId.ToString()] = socket;
+        _sockets[connectionId] = socket;
     }
 
-    public async Task RemoveSocketAsync(string connectionId)
+    public async Task RemoveSocketAsync(Guid connectionId)
     {
         if (_sockets.TryRemove(connectionId, out var socket))
         {
@@ -49,6 +49,9 @@ public class WebSocketService : IWebSocketService
     
     public async Task HandleWebSocketAsync(WebSocket webSocket)
      {
+         var connectionId = Guid.NewGuid();
+         AddSocket(connectionId, webSocket);
+         
          try
          {
              using var scope = _serviceProvider.CreateScope();
@@ -96,9 +99,9 @@ public class WebSocketService : IWebSocketService
          }
          finally
          {
-             if (webSocket.State != WebSocketState.Closed)
+             if (webSocket.State != WebSocketState.Closed || webSocket.State != WebSocketState.Aborted)
              {
-                 await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Server closed connection", CancellationToken.None);
+                 await RemoveSocketAsync(connectionId);
              }
              Console.WriteLine("Connection closed.");
          }
