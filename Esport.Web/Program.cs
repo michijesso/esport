@@ -1,4 +1,3 @@
-using System.Net.WebSockets;
 using Esport.Domain;
 using Esport.Domain.Models;
 using Esport.Infrastructure;
@@ -30,20 +29,6 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseWebSockets();
 app.UseRouting();
-
-// app.Map("/ws", async context =>
-// {
-//     if (context.WebSockets.IsWebSocketRequest)
-//     {
-//         var webSocketHandler = context.RequestServices.GetRequiredService<WebSocketHandler>();
-//         var webSocket = await context.WebSockets.AcceptWebSocketAsync();
-//         await webSocketHandler.HandleWebSocketAsync(webSocket);
-//     }
-//     else
-//     {
-//         context.Response.StatusCode = 400;
-//     }
-// });
 
 app.MapControllers();
 

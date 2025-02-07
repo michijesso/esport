@@ -1,12 +1,14 @@
 namespace Esport.Web;
 
 using System.Net.WebSockets;
-using Dtos;
 
 public interface IWebSocketService
 {
-    void AddSocket(Guid connectionId, WebSocket webSocket);
-    Task RemoveSocketAsync(Guid socketId);
-    Task BroadcastMessageAsync(string message);
-    Task HandleWebSocketAsync(WebSocket webSocket);
+    void AddSocketForAllEvents(Guid connectionId, WebSocket socket);
+    void AddSocketForSpecifiedEvent(Guid connectionId, WebSocket socket, Guid eventId);
+    Task RemoveSocketForAllEventsAsync(Guid connectionId);
+    Task RemoveSocketForSpecificEventAsync(Guid connectionId, Guid eventId);
+    Task BroadcastMessageAsync(string message, Guid? eventId);
+    Task HandleWebSocketForAllEventsAsync(WebSocket webSocket);
+    Task HandleWebSocketForSpecifiedEventAsync(WebSocket webSocket, Guid eventId);
 }

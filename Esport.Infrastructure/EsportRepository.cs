@@ -8,33 +8,28 @@ public class EsportRepository<T>(EsportDbContext context) : IEsportRepository<T>
 {
     private readonly DbSet<T> _dbSet = context.Set<T>();
 
-    // Получить сущность по ID
     public async Task<T> GetByIdAsync(Guid id)
     {
         return await _dbSet.FindAsync(id);
     }
 
-    // Получить все сущности
     public async Task<IEnumerable<T>> GetAllAsync()
     {
         return await _dbSet.ToListAsync();
     }
 
-    // Добавить сущность
     public async Task AddAsync(T entity)
     {
         await _dbSet.AddAsync(entity);
         await context.SaveChangesAsync();
     }
 
-    // Обновить сущность
     public async Task UpdateAsync(T entity)
     {
         _dbSet.Update(entity);
         await context.SaveChangesAsync();
     }
 
-    // Удалить сущность по ID
     public async Task DeleteAsync(int id)
     {
         var entity = await _dbSet.FindAsync(id);
@@ -43,5 +38,10 @@ public class EsportRepository<T>(EsportDbContext context) : IEsportRepository<T>
             _dbSet.Remove(entity);
             await context.SaveChangesAsync();
         }
+    }
+    
+    public async Task<bool> ExistsAsync(Guid id)
+    {
+        return await context.EsportEvents.AnyAsync(e => e.Id == id);
     }
 }

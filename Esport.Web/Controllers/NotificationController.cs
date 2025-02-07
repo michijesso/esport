@@ -19,11 +19,21 @@ public class NotificationController : ControllerBase
         _esportRepository = esportRepository;
     }
 
-    [HttpPost]
-    public async Task<IActionResult> NotifyClients()
+    [HttpGet]
+    [Route("getEventById/{id}")]
+    public async Task<IActionResult> GetEventById([FromRoute] Guid id)
+    {
+        var esportEvent = await _esportRepository.GetByIdAsync(id);
+        await _webSocketService.BroadcastMessageAsync(JsonSerializer.Serialize(esportEvent), id);
+        return Ok(esportEvent);
+    }
+    
+    [HttpGet]
+    [Route("getAllEvents")]
+    public async Task<IActionResult> GetAllEvents()
     {
         var esportEvents = await _esportRepository.GetAllAsync();
-        await _webSocketService.BroadcastMessageAsync(JsonSerializer.Serialize(esportEvents));
-        return Ok();
+        await _webSocketService.BroadcastMessageAsync(JsonSerializer.Serialize(esportEvents), null);
+        return Ok(esportEvents);
     }
 }

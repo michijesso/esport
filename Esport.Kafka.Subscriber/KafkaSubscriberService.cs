@@ -1,6 +1,3 @@
-using System.Text;
-using Esport.Web;
-
 namespace Esport.Kafka.Subscriber;
 
 using System.Text.Json;
@@ -41,7 +38,7 @@ public class KafkaSubscriberService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Kafka subscriber started.");
+        _logger.LogInformation("Kafka subscriber started");
 
         try
         {
@@ -58,11 +55,11 @@ public class KafkaSubscriberService : BackgroundService
                 }
                 catch (OperationCanceledException)
                 {
-                    _logger.LogWarning("Kafka consuming was cancelled.");
+                    _logger.LogWarning("Kafka consuming was cancelled");
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error consuming message from Kafka.");
+                    _logger.LogError(ex, "Error consuming message from Kafka");
                 }
             }
         }
@@ -71,7 +68,7 @@ public class KafkaSubscriberService : BackgroundService
             _consumer.Close();
         }
 
-        _logger.LogInformation("Kafka subscriber stopped.");
+        _logger.LogInformation("Kafka subscriber stopped");
     }
 
     private async Task ProcessMessageAsync(string message)
@@ -79,9 +76,17 @@ public class KafkaSubscriberService : BackgroundService
         var data = JsonSerializer.Deserialize<EsportEvent>(message);
         if (data != null)
         {
-            await _esportRepository.AddAsync(data);
-            var content = new StringContent("New events added", Encoding.UTF8, "application/json");
-            await _httpClient.PostAsync("http://localhost:5088/api/notifications", content);
+            var isExistedEvent = await _esportRepository.ExistsAsync(data.Id);
+            if (isExistedEvent)
+            {
+                await _esportRepository.UpdateAsync(data);
+                await _httpClient.GetAsync($"http://localhost:5088/api/notifications/getEventById={data.Id}");
+            }
+            else
+            {
+                await _esportRepository.AddAsync(data);
+                await _httpClient.GetAsync($"http://localhost:5088/api/notifications/getAllEvents");
+            }
         }
         _logger.LogInformation($"Processed message: {data}");
     }
