@@ -13,12 +13,12 @@ public class KafkaSubscriberService : BackgroundService
     private readonly IConsumer<Ignore, string> _consumer;
     private readonly ILogger<KafkaSubscriberService> _logger;
     private readonly KafkaConfiguration _configuration;
-    private readonly IEsportRepository<EsportEvent> _esportRepository;
+    private readonly IEsportRepository _esportRepository;
     private readonly HttpClient _httpClient;
 
     public KafkaSubscriberService(KafkaConfiguration configuration,
                                     ILogger<KafkaSubscriberService> logger,
-                                    IEsportRepository<EsportEvent> esportRepository)
+                                    IEsportRepository esportRepository)
     {
         _configuration = configuration;
         _logger = logger;
@@ -76,16 +76,14 @@ public class KafkaSubscriberService : BackgroundService
         var data = JsonSerializer.Deserialize<EsportEvent>(message);
         if (data != null)
         {
-            var isExistedEvent = await _esportRepository.ExistsAsync(data.Id);
+            var isExistedEvent = await _esportRepository.AddOrUpdateAsync(data);
             if (isExistedEvent)
             {
-                await _esportRepository.UpdateAsync(data);
-                await _httpClient.GetAsync($"http://localhost:5088/api/notifications/getEventById={data.Id}");
+                await _httpClient.GetAsync($"http://localhost:5088/api/notifications/getAllEvents");
             }
             else
             {
-                await _esportRepository.AddAsync(data);
-                await _httpClient.GetAsync($"http://localhost:5088/api/notifications/getAllEvents");
+                await _httpClient.GetAsync($"http://localhost:5088/api/notifications/getEventById/{data.Event.Id}");
             }
         }
         _logger.LogInformation($"Processed message: {data}");

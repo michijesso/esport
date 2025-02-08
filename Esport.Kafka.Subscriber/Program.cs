@@ -19,8 +19,8 @@ builder.Configuration
 var kafkaConfig = builder.Configuration.GetSection("Kafka").Get<KafkaConfiguration>();
 
 builder.Services.AddSingleton(kafkaConfig);
-builder.Services.AddHostedService<KafkaSubscriberService>(); 
-builder.Services.AddScoped<IEsportRepository<EsportEvent>, EsportRepository<EsportEvent>>(); 
+builder.Services.AddHostedService<KafkaSubscriberService>();
+builder.Services.AddScoped<IEsportRepository, EsportRepository>(); 
 
 builder.Services.AddDbContext<EsportDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("PostgresConnection"),

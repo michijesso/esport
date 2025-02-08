@@ -4,5 +4,6 @@ using Models;
 
 public interface IEsportGenerator
 {
-    Task<EsportGeneratorModel> GenerateAsync();
+    EsportGeneratorModel GenerateAsync();
+    EsportGeneratorModel UpdateEsportData(EsportGeneratorModel esportGeneratorModel);
 }

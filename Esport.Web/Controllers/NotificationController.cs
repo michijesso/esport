@@ -1,3 +1,6 @@
+using AutoMapper;
+using Esport.Web.Dtos;
+
 namespace Esport.Web.Controllers;
 
 using Microsoft.AspNetCore.Mvc;
@@ -11,20 +14,23 @@ using Domain.Models;
 public class NotificationController : ControllerBase
 {
     private readonly IWebSocketService _webSocketService;
-    private readonly IEsportRepository<EsportEvent> _esportRepository;
+    private readonly IEsportRepository _esportRepository;
+    private readonly IMapper _mapper;
 
-    public NotificationController(IWebSocketService webSocketService, IEsportRepository<EsportEvent> esportRepository)
+    public NotificationController(IWebSocketService webSocketService, IEsportRepository esportRepository, IMapper mapper)
     {
         _webSocketService = webSocketService;
         _esportRepository = esportRepository;
+        _mapper = mapper;
     }
 
     [HttpGet]
     [Route("getEventById/{id}")]
-    public async Task<IActionResult> GetEventById([FromRoute] Guid id)
+    public async Task<IActionResult> GetEventById([FromRoute] int id)
     {
-        var esportEvent = await _esportRepository.GetByIdAsync(id);
-        await _webSocketService.BroadcastMessageAsync(JsonSerializer.Serialize(esportEvent), id);
+        var esportEvent = _esportRepository.GetByIdAsync(id);
+        var mappedEsportEvent = _mapper.Map<EsportEventDto>(esportEvent);
+        await _webSocketService.BroadcastSpecifiedEventAsync(JsonSerializer.Serialize(mappedEsportEvent), id);
         return Ok(esportEvent);
     }
     
@@ -33,7 +39,8 @@ public class NotificationController : ControllerBase
     public async Task<IActionResult> GetAllEvents()
     {
         var esportEvents = await _esportRepository.GetAllAsync();
-        await _webSocketService.BroadcastMessageAsync(JsonSerializer.Serialize(esportEvents), null);
+        var mappedEsportEvents = _mapper.Map<IEnumerable<EsportEventDto>>(esportEvents);
+        await _webSocketService.BroadcastAllEventsAsync(JsonSerializer.Serialize(mappedEsportEvents));
         return Ok(esportEvents);
     }
 }

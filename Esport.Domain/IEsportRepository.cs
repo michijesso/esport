@@ -1,33 +1,28 @@
 namespace Esport.Domain;
 
-public interface IEsportRepository<T>
+using Models;
+
+public interface IEsportRepository
 {
     /// <summary>
     /// Получение сущносит по Id
     /// </summary>
     /// <param name="id">Id</param>
     /// <returns></returns>
-    Task<T> GetByIdAsync(Guid id);
+    EsportEvent GetByIdAsync(int id);
     
     /// <summary>
     /// Получение всех сущностей
     /// </summary>
     /// <returns></returns>
-    Task<IEnumerable<T>> GetAllAsync();
+    Task<IEnumerable<EsportEvent>> GetAllAsync();
     
     /// <summary>
     /// Добавить сущность
     /// </summary>
     /// <param name="entity">Сущность</param>
     /// <returns></returns>
-    Task AddAsync(T entity);
-
-    /// <summary>
-    /// Обновить сущность
-    /// </summary>
-    /// <param name="entity">Сущность</param>
-    /// <returns></returns>
-    Task UpdateAsync(T entity);
+    Task<bool> AddOrUpdateAsync(EsportEvent entity);
     
     /// <summary>
     /// Удалить сущность
@@ -35,11 +30,4 @@ public interface IEsportRepository<T>
     /// <param name="id">Сущность</param>
     /// <returns></returns>
     Task DeleteAsync(int id);
-    
-    /// <summary>
-    /// Проверка существования сущность
-    /// </summary>
-    /// <param name="id">Id</param>
-    /// <returns></returns>
-    Task<bool> ExistsAsync(Guid id);
 }

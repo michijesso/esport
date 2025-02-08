@@ -1,3 +1,6 @@
+using AutoMapper;
+using Esport.Web.Dtos;
+
 namespace Esport.Web;
 
 using System.Net.WebSockets;
@@ -5,18 +8,19 @@ using System.Text;
 using System.Collections.Concurrent;
 using System.Text.Json;
 using Domain;
-using Domain.Models;
 
 public class WebSocketService : IWebSocketService
 {
     private readonly ConcurrentDictionary<Guid, WebSocket> _allEventsSubscribers = new();
-    private readonly ConcurrentDictionary<Guid, ConcurrentDictionary<Guid, WebSocket>> _specificEventSubscribers = new();
+    private readonly ConcurrentDictionary<int, ConcurrentDictionary<Guid, WebSocket>> _specificEventSubscribers = new();
 
     private readonly IServiceProvider _serviceProvider;
+    private readonly IMapper _mapper;
 
-    public WebSocketService(IServiceProvider serviceProvider)
+    public WebSocketService(IServiceProvider serviceProvider, IMapper mapper)
     {
         _serviceProvider = serviceProvider;
+        _mapper = mapper;
     }
 
     public void AddSocketForAllEvents(Guid connectionId, WebSocket socket)
@@ -24,7 +28,7 @@ public class WebSocketService : IWebSocketService
         _allEventsSubscribers[connectionId] = socket;
     }
     
-    public void AddSocketForSpecifiedEvent(Guid connectionId, WebSocket socket, Guid eventId)
+    public void AddSocketForSpecifiedEvent(Guid connectionId, WebSocket socket, int eventId)
     {
         if (!_specificEventSubscribers.ContainsKey(eventId))
         {
@@ -43,11 +47,11 @@ public class WebSocketService : IWebSocketService
         }
     }
     
-    public async Task RemoveSocketForSpecificEventAsync(Guid connectionId, Guid eventId)
+    public async Task RemoveSocketForSpecificEventAsync(Guid connectionId, int eventId)
     {
-        if (_specificEventSubscribers.ContainsKey(eventId))
+        if (_specificEventSubscribers.TryGetValue(eventId, out var subscriber))
         {
-            if (_specificEventSubscribers[eventId].TryRemove(connectionId, out var socket))
+            if (subscriber.TryRemove(connectionId, out var socket))
             {
                 await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed by server", CancellationToken.None);
                 socket.Dispose();
@@ -55,30 +59,27 @@ public class WebSocketService : IWebSocketService
         }
     }
     
-    public async Task BroadcastMessageAsync(string message, Guid? eventId = null)
+    public async Task BroadcastAllEventsAsync(string message)
     {
         var buffer = Encoding.UTF8.GetBytes(message);
         var tasks = new List<Task>();
 
-        foreach (var socket in _allEventsSubscribers.Values)
+        if (!_allEventsSubscribers.IsEmpty)
         {
-            if (socket.State == WebSocketState.Open)
-            {
-                tasks.Add(socket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None));
-            }
+            tasks.AddRange(from socket in _allEventsSubscribers.Values where socket.State == WebSocketState.Open select socket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None));
         }
 
-        if (eventId.HasValue && _specificEventSubscribers.ContainsKey(eventId.Value))
+        await Task.WhenAll(tasks);
+    }
+    
+    public async Task BroadcastSpecifiedEventAsync(string message, int eventId)
+    {
+        var buffer = Encoding.UTF8.GetBytes(message);
+        var tasks = new List<Task>();
+        
+        if (_specificEventSubscribers.TryGetValue(eventId, out var specificEventSubscribers))
         {
-            var specificEventSubscribers = _specificEventSubscribers[eventId.Value];
-
-            foreach (var socket in specificEventSubscribers.Values)
-            {
-                if (socket.State == WebSocketState.Open)
-                {
-                    tasks.Add(socket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None));
-                }
-            }
+            tasks.AddRange(from socket in specificEventSubscribers.Values where socket.State == WebSocketState.Open select socket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None));
         }
 
         await Task.WhenAll(tasks);
@@ -92,22 +93,21 @@ public class WebSocketService : IWebSocketService
         try
         {
             using var scope = _serviceProvider.CreateScope();
-            var esportRepository = scope.ServiceProvider.GetRequiredService<IEsportRepository<EsportEvent>>();
+            var esportRepository = scope.ServiceProvider.GetRequiredService<IEsportRepository>();
             var buffer = new byte[1024 * 4];
-            var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
 
-            while (!result.CloseStatus.HasValue)
+            var allEvents = await esportRepository.GetAllAsync();
+            var mappedEvents = _mapper.Map<IEnumerable<EsportEventDto>>(allEvents);
+            var response = JsonSerializer.Serialize(mappedEvents);
+
+            if (!string.IsNullOrEmpty(response))
             {
-                result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-                var allEvents = await esportRepository.GetAllAsync();
-                var response = JsonSerializer.Serialize(allEvents);
-
-                if (!string.IsNullOrEmpty(response))
-                {
-                    var responseBytes = Encoding.UTF8.GetBytes(response);
-                    await webSocket.SendAsync(new ArraySegment<byte>(responseBytes), WebSocketMessageType.Text, true, CancellationToken.None);
-                }
+                var responseBytes = Encoding.UTF8.GetBytes(response);
+                await webSocket.SendAsync(new ArraySegment<byte>(responseBytes), WebSocketMessageType.Text, true, CancellationToken.None);
             }
+            
+            //при комплите таски (любой ввод со стороны клиента), закрываем соединение
+            await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
         }
         catch (WebSocketException ex)
         {
@@ -127,7 +127,7 @@ public class WebSocketService : IWebSocketService
         }
     }
 
-    public async Task HandleWebSocketForSpecifiedEventAsync(WebSocket webSocket, Guid eventId)
+    public async Task HandleWebSocketForSpecifiedEventAsync(WebSocket webSocket, int eventId)
     {
         var connectionId = Guid.NewGuid();
         AddSocketForSpecifiedEvent(connectionId, webSocket, eventId);
@@ -135,22 +135,20 @@ public class WebSocketService : IWebSocketService
         try
         {
             using var scope = _serviceProvider.CreateScope();
-            var esportRepository = scope.ServiceProvider.GetRequiredService<IEsportRepository<EsportEvent>>();
+            var esportRepository = scope.ServiceProvider.GetRequiredService<IEsportRepository>();
             var buffer = new byte[1024 * 4];
-            var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-            
-            while (!result.CloseStatus.HasValue)
+            var esportEvent = esportRepository.GetByIdAsync(eventId);
+            var mappedEvent = _mapper.Map<EsportEventDto>(esportEvent);
+            var response = JsonSerializer.Serialize(mappedEvent);
+
+            if (!string.IsNullOrEmpty(response))
             {
-                result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-                
-                await esportRepository.GetByIdAsync(eventId);
-                var response = $"Subscribed to event with ID {eventId}";
-                if (!string.IsNullOrEmpty(response))
-                {
-                    var responseBytes = Encoding.UTF8.GetBytes(response);
-                    await webSocket.SendAsync(new ArraySegment<byte>(responseBytes), WebSocketMessageType.Text, true, CancellationToken.None);
-                }
+                var responseBytes = Encoding.UTF8.GetBytes(response);
+                await webSocket.SendAsync(new ArraySegment<byte>(responseBytes), WebSocketMessageType.Text, true, CancellationToken.None);
             }
+            
+            //при комплите таски (любой ввод со стороны клиента), закрываем соединение
+            await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
         }
         catch (WebSocketException ex)
         {

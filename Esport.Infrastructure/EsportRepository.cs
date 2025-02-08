@@ -2,46 +2,64 @@ namespace Esport.Infrastructure;
 
 using Domain;
 using Microsoft.EntityFrameworkCore;
+using Domain.Models;
 
-public class EsportRepository<T>(EsportDbContext context) : IEsportRepository<T>
-    where T : class
+public class EsportRepository : IEsportRepository
 {
-    private readonly DbSet<T> _dbSet = context.Set<T>();
+    private readonly EsportDbContext _context;
 
-    public async Task<T> GetByIdAsync(Guid id)
+    public EsportRepository(EsportDbContext context)
     {
-        return await _dbSet.FindAsync(id);
+        _context = context;
+    }
+    
+    public EsportEvent GetByIdAsync(int id)
+    {
+        return _context.EsportEvents
+            .Include(e => e.Event)
+                .ThenInclude(p => p.Participants)
+            .Include(e => e.Event)
+                .ThenInclude(m => m.Market)
+                .ThenInclude(s => s.Selections)
+            .FirstOrDefault(x => x.Event.Id == id) ?? throw new KeyNotFoundException();
     }
 
-    public async Task<IEnumerable<T>> GetAllAsync()
+    public async Task<IEnumerable<EsportEvent>> GetAllAsync()
     {
-        return await _dbSet.ToListAsync();
+        return await _context.EsportEvents
+            .Include(e => e.Event)
+                .ThenInclude(p => p.Participants)
+            .Include(e => e.Event)
+                .ThenInclude(m => m.Market)
+                .ThenInclude(s => s.Selections)
+            .ToListAsync();
     }
 
-    public async Task AddAsync(T entity)
+    public async Task<bool> AddOrUpdateAsync(EsportEvent entity)
     {
-        await _dbSet.AddAsync(entity);
-        await context.SaveChangesAsync();
-    }
+        var existingEntity = await _context.Events.FindAsync(entity.Event.Id);
 
-    public async Task UpdateAsync(T entity)
-    {
-        _dbSet.Update(entity);
-        await context.SaveChangesAsync();
+        if (existingEntity == null)
+        {
+            await _context.EsportEvents.AddAsync(entity);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        else
+        {
+            existingEntity.CurrentScore = entity.Event.CurrentScore;
+            await _context.SaveChangesAsync();
+            return false;
+        }
     }
 
     public async Task DeleteAsync(int id)
     {
-        var entity = await _dbSet.FindAsync(id);
+        var entity = await _context.EsportEvents.FindAsync(id);
         if (entity != null)
         {
-            _dbSet.Remove(entity);
-            await context.SaveChangesAsync();
+            _context.EsportEvents.Remove(entity);
+            await _context.SaveChangesAsync();
         }
-    }
-    
-    public async Task<bool> ExistsAsync(Guid id)
-    {
-        return await context.EsportEvents.AnyAsync(e => e.Id == id);
     }
 }

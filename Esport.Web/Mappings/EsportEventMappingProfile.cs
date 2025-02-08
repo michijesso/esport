@@ -9,8 +9,8 @@ public class EsportEventMappingProfile : Profile
     public EsportEventMappingProfile()
     {
         CreateMap<EsportEvent, EsportEventDto>()
-            .ForMember(dest => dest.Event, opt => opt.MapFrom(src => src.Event));
-        
+            .ForMember(dest => dest.Event, opt => opt.MapFrom(src => src.Event ?? new Event()));
+
         CreateMap<Event, EventDto>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()))
             .ForMember(dest => dest.Participants, opt => opt.MapFrom(src => src.Participants))
@@ -18,7 +18,11 @@ public class EsportEventMappingProfile : Profile
             .ReverseMap();
 
         CreateMap<Participant, ParticipantDto>().ReverseMap();
-        CreateMap<Market, MarketDto>().ReverseMap();
+        CreateMap<Market, MarketDto>()
+            .ForMember(dest => dest.Selections, opt => opt.MapFrom(src => src.Selections))
+            .ReverseMap();
+
+        CreateMap<Selection, SelectionDto>().ReverseMap();
     }
 }
 

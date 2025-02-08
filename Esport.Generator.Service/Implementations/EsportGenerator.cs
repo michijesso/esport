@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace Esport.GeneratorService.Implementations;
 
 using Core.Interfaces;
@@ -45,9 +47,9 @@ public class EsportGenerator : IEsportGenerator
         { "Fortnite World Cup", ["Fortnite World Cup 2022", "Fortnite World Cup 2023", "Fortnite World Cup 2024"] }
     };
 
-    public async Task<EsportGeneratorModel> GenerateAsync()
+    public EsportGeneratorModel GenerateAsync()
     {
-        var championshipData = await GenerateChampionshipDataAsync();
+        var championshipData = GenerateChampionshipDataAsync();
         
         var teamOne = _participantNames[_random.Next(_participantNames.Count)];
         var teamTwo = _participantNames
@@ -108,26 +110,51 @@ public class EsportGenerator : IEsportGenerator
         return result;
     }
     
-    private async Task<EsportData> GenerateChampionshipDataAsync()
+    private EsportData GenerateChampionshipDataAsync()
     {
-        return await Task.Run(() =>
+        var selectedEsport = _esports[_random.Next(_esports.Count)];
+
+        var availableLeagues = _leagues[selectedEsport];
+        var selectedLeague = availableLeagues[_random.Next(availableLeagues.Count)];
+
+        var availableChampionships = _championships[selectedLeague];
+        var selectedChampionship = availableChampionships[_random.Next(availableChampionships.Count)];
+
+        var championshipData = new EsportData
         {
-            var selectedEsport = _esports[_random.Next(_esports.Count)];
+            Esport = selectedEsport,
+            League = selectedLeague,
+            Championship = selectedChampionship
+        };
+        
+        return championshipData;
+    }
 
-            var availableLeagues = _leagues[selectedEsport];
-            var selectedLeague = availableLeagues[_random.Next(availableLeagues.Count)];
+    public EsportGeneratorModel UpdateEsportData(EsportGeneratorModel esportGeneratorModel)
+    {
+        var newScore = GetNewScore(esportGeneratorModel.Event.CurrentScore);
+        esportGeneratorModel.Event.CurrentScore = newScore;
 
-            var availableChampionships = _championships[selectedLeague];
-            var selectedChampionship = availableChampionships[_random.Next(availableChampionships.Count)];
+        return esportGeneratorModel;
+    }
 
-            var championshipData = new EsportData
-            {
-                Esport = selectedEsport,
-                League = selectedLeague,
-                Championship = selectedChampionship
-            };
-            
-            return championshipData;
-        });
+    private string GetNewScore(string currentScore)
+    {
+        var match = Regex.Match(currentScore, @"(.+?):(\d+) - (.+?):(\d+)");
+
+        if (!match.Success)
+            throw new ArgumentException("Неверный формат строки.");
+
+        var teamOne = match.Groups[1].Value;
+        var teamOneScore = int.Parse(match.Groups[2].Value);
+        var teamTwo = match.Groups[3].Value;
+        var teamTwoScore = int.Parse(match.Groups[4].Value);
+
+        if (_random.Next(2) == 0)
+            teamOneScore++;
+        else
+            teamTwoScore++;
+
+        return $"{teamOne}:{teamOneScore} - {teamTwo}:{teamTwoScore}";
     }
 }

@@ -8,42 +8,38 @@ using Microsoft.AspNetCore.Mvc;
 [Route("api/")]
 public class EsportController : ControllerBase
 {
-    private readonly IMapper _mapper;
     private readonly IWebSocketService _webSocketService;
 
-    public EsportController(IMapper mapper, IWebSocketService webSocketService)
+    public EsportController(IWebSocketService webSocketService)
     {
-        _mapper = mapper;
         _webSocketService = webSocketService;
     }
 
-    [HttpGet("ws/getEventById/{id}")]
-    public async Task<IActionResult> WebSocketConnect([FromRoute] Guid id)
+    [HttpGet("ws/getEventById/{eventId}")]
+    public async Task WebSocketConnect([FromRoute] int eventId)
     {
         if (HttpContext.WebSockets.IsWebSocketRequest)
         {
-            WebSocket webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-            await _webSocketService.HandleWebSocketForSpecifiedEventAsync(webSocket, id);
-            return Ok();
+            using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+            await _webSocketService.HandleWebSocketForSpecifiedEventAsync(webSocket, eventId);
         }
         else
         {
-            return BadRequest("WebSocket connection required");
+            HttpContext.Response.StatusCode = 400;
         }
     }
     
     [HttpGet("ws/getAllEvents")]
-    public async Task<IActionResult> WebSocketConnect()
+    public async Task WebSocketConnect()
     {
         if (HttpContext.WebSockets.IsWebSocketRequest)
         {
-            WebSocket webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+            using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
             await _webSocketService.HandleWebSocketForAllEventsAsync(webSocket);
-            return Ok();
         }
         else
         {
-            return BadRequest("WebSocket connection required");
+            HttpContext.Response.StatusCode = 400;
         }
     }
 }
