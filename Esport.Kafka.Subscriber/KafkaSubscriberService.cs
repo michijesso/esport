@@ -1,39 +1,43 @@
 namespace Esport.Kafka.Subscriber;
 
 using System.Text.Json;
+using Common;
 using Confluent.Kafka;
+using Domain;
+using Domain.Models;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Common;
-using Domain.Models;
-using Domain;
+using Microsoft.Extensions.Options;
+using Models;
 
 public class KafkaSubscriberService : BackgroundService
 {
     private readonly IConsumer<Ignore, string> _consumer;
     private readonly ILogger<KafkaSubscriberService> _logger;
-    private readonly KafkaConfiguration _configuration;
     private readonly IEsportRepository _esportRepository;
-    private readonly HttpClient _httpClient;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ApiConnectionConfiguration _apiConnection;
 
-    public KafkaSubscriberService(KafkaConfiguration configuration,
+    public KafkaSubscriberService(IOptions<KafkaConfiguration> kafkaConfig,
                                     ILogger<KafkaSubscriberService> logger,
-                                    IEsportRepository esportRepository)
+                                    IEsportRepository esportRepository,
+                                    IHttpClientFactory httpClientFactory,
+                                    IOptions<ApiConnectionConfiguration> apiConnection)
     {
-        _configuration = configuration;
         _logger = logger;
         _esportRepository = esportRepository;
-        _httpClient = new HttpClient();
+        _httpClientFactory = httpClientFactory;
+        _apiConnection = apiConnection.Value;
 
         var config = new ConsumerConfig
         {
-            BootstrapServers = _configuration.BootstrapServers,
-            GroupId = _configuration.GroupId,
+            BootstrapServers = kafkaConfig.Value.BootstrapServers,
+            GroupId = kafkaConfig.Value.GroupId,
             AutoOffsetReset = AutoOffsetReset.Earliest
         };
 
         _consumer = new ConsumerBuilder<Ignore, string>(config).Build();
-        _consumer.Subscribe(_configuration.Topic);
+        _consumer.Subscribe(kafkaConfig.Value.Topic);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -77,14 +81,12 @@ public class KafkaSubscriberService : BackgroundService
         if (data != null)
         {
             var isExistedEvent = await _esportRepository.AddOrUpdateAsync(data);
-            if (isExistedEvent)
-            {
-                await _httpClient.GetAsync($"http://localhost:5088/api/notifications/getAllEvents");
-            }
-            else
-            {
-                await _httpClient.GetAsync($"http://localhost:5088/api/notifications/getEventById/{data.Event.Id}");
-            }
+
+            var client = _httpClientFactory.CreateClient();
+            var endpoint = isExistedEvent ? "getAllEvents" : $"getEventById/{data.Event.Id}";
+            var response = await client.GetAsync($"{_apiConnection.BaseUrl}{endpoint}");
+
+            _logger.LogInformation($"Notification sent: {response.StatusCode}");
         }
         _logger.LogInformation($"Processed message: {data}");
     }

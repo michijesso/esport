@@ -1,8 +1,8 @@
 namespace Esport.Infrastructure;
 
 using Domain;
-using Microsoft.EntityFrameworkCore;
 using Domain.Models;
+using Microsoft.EntityFrameworkCore;
 
 public class EsportRepository : IEsportRepository
 {

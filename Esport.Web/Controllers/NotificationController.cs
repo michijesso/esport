@@ -3,11 +3,11 @@ using Esport.Web.Dtos;
 
 namespace Esport.Web.Controllers;
 
-using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
 using System.Text.Json;
+using System.Threading.Tasks;
 using Domain;
 using Domain.Models;
+using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("api/notifications")]

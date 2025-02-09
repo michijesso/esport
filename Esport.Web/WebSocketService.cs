@@ -3,9 +3,9 @@ using Esport.Web.Dtos;
 
 namespace Esport.Web;
 
+using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Text;
-using System.Collections.Concurrent;
 using System.Text.Json;
 using Domain;
 

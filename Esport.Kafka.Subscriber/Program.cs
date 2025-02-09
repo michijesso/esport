@@ -1,30 +1,34 @@
-﻿using Esport.Kafka.Common;
+﻿using Esport.Domain;
+using Esport.Infrastructure;
+using Esport.Kafka.Common;
 using Esport.Kafka.Subscriber;
+using Esport.Kafka.Subscriber.Models;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.EntityFrameworkCore;
-using Esport.Domain;
-using Esport.Domain.Models;
-using Esport.Infrastructure;
-using Esport.Web;
 
-var builder = Host.CreateApplicationBuilder(args);
+var builder = Host.CreateDefaultBuilder(args);
 
-builder.Configuration
-    .SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-    .AddEnvironmentVariables();
+builder.ConfigureAppConfiguration((context, config) =>
+{
+    config.SetBasePath(Directory.GetCurrentDirectory())
+        .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+        .AddEnvironmentVariables();
+});
 
-var kafkaConfig = builder.Configuration.GetSection("Kafka").Get<KafkaConfiguration>();
-
-builder.Services.AddSingleton(kafkaConfig);
-builder.Services.AddHostedService<KafkaSubscriberService>();
-builder.Services.AddScoped<IEsportRepository, EsportRepository>(); 
-
-builder.Services.AddDbContext<EsportDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgresConnection"),
-        b => b.MigrationsAssembly("Esport.Kafka.Subscriber")));
+builder.ConfigureServices((context, services) =>
+{
+    services.Configure<KafkaConfiguration>(context.Configuration.GetSection("Kafka"));
+    services.Configure<ApiConnectionConfiguration>(context.Configuration.GetSection("ApiConnection"));
+    services.AddHostedService<KafkaSubscriberService>();
+    services.AddScoped<IEsportRepository, EsportRepository>();
+    services.AddDbContext<EsportDbContext>(options =>
+        options.UseNpgsql(context.Configuration.GetConnectionString("PostgresConnection"),
+            b => b.MigrationsAssembly("Esport.Kafka.Subscriber")));
+    services.AddHttpClient();
+});
 
 var app = builder.Build();
+
 await app.RunAsync();

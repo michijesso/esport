@@ -1,8 +1,8 @@
 namespace Esport.Kafka.Publisher;
 
 using System.Text.Json;
-using Confluent.Kafka;
 using Common;
+using Confluent.Kafka;
 
 public class KafkaMessageBus : IMessageBus, IDisposable
 {

@@ -9,6 +9,7 @@ COPY ["Esport.Kafka.Subscriber/Esport.Kafka.Subscriber.csproj", "Esport.Kafka.Su
 COPY ["Esport.Kafka.Common/Esport.Kafka.Common.csproj", "Esport.Kafka.Common/"]
 COPY ["Esport.Domain/Esport.Domain.csproj", "Esport.Domain/"]
 COPY ["Esport.Infrastructure/Esport.Infrastructure.csproj", "Esport.Infrastructure/"]
+COPY ["Esport.Web/Esport.Web.csproj", "Esport.Web/"]
 RUN dotnet restore "Esport.Kafka.Subscriber/Esport.Kafka.Subscriber.csproj"
 COPY . .
 WORKDIR "/src/Esport.Kafka.Subscriber"
