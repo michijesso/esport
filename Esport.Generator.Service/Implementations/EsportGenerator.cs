@@ -47,7 +47,7 @@ public class EsportGenerator : IEsportGenerator
         { "Fortnite World Cup", ["Fortnite World Cup 2022", "Fortnite World Cup 2023", "Fortnite World Cup 2024"] }
     };
 
-    public EsportGeneratorModel GenerateAsync()
+    public EsportGeneratorModel GenerateEsportData()
     {
         var championshipData = GenerateChampionshipDataAsync();
         

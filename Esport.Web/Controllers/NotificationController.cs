@@ -1,25 +1,29 @@
-using AutoMapper;
-using Esport.Web.Dtos;
-
 namespace Esport.Web.Controllers;
 
 using System.Text.Json;
 using System.Threading.Tasks;
+using AutoMapper;
 using Domain;
-using Domain.Models;
+using Dtos;
+using Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("api/notifications")]
 public class NotificationController : ControllerBase
 {
-    private readonly IWebSocketService _webSocketService;
+    private readonly IWebSocketSpecifiedEventService _webSocketSpecifiedEventService;
+    private readonly IWebSocketAllEventsService _webSocketAllEventsService;
     private readonly IEsportRepository _esportRepository;
     private readonly IMapper _mapper;
 
-    public NotificationController(IWebSocketService webSocketService, IEsportRepository esportRepository, IMapper mapper)
+    public NotificationController(IWebSocketSpecifiedEventService webSocketSpecifiedEventService,
+                                    IWebSocketAllEventsService webSocketAllEventsService,
+                                    IEsportRepository esportRepository,
+                                    IMapper mapper)
     {
-        _webSocketService = webSocketService;
+        _webSocketSpecifiedEventService = webSocketSpecifiedEventService;
+        _webSocketAllEventsService = webSocketAllEventsService;
         _esportRepository = esportRepository;
         _mapper = mapper;
     }
@@ -30,7 +34,7 @@ public class NotificationController : ControllerBase
     {
         var esportEvent = _esportRepository.GetByIdAsync(id);
         var mappedEsportEvent = _mapper.Map<EsportEventDto>(esportEvent);
-        await _webSocketService.BroadcastSpecifiedEventAsync(JsonSerializer.Serialize(mappedEsportEvent), id);
+        await _webSocketSpecifiedEventService.BroadcastSpecifiedEventAsync(JsonSerializer.Serialize(mappedEsportEvent), id);
         return Ok(esportEvent);
     }
     
@@ -40,7 +44,7 @@ public class NotificationController : ControllerBase
     {
         var esportEvents = await _esportRepository.GetAllAsync();
         var mappedEsportEvents = _mapper.Map<IEnumerable<EsportEventDto>>(esportEvents);
-        await _webSocketService.BroadcastAllEventsAsync(JsonSerializer.Serialize(mappedEsportEvents));
+        await _webSocketAllEventsService.BroadcastAllEventsAsync(JsonSerializer.Serialize(mappedEsportEvents));
         return Ok(esportEvents);
     }
 }

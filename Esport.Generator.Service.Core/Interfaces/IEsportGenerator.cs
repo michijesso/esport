@@ -4,6 +4,6 @@ using Models;
 
 public interface IEsportGenerator
 {
-    EsportGeneratorModel GenerateAsync();
+    EsportGeneratorModel GenerateEsportData();
     EsportGeneratorModel UpdateEsportData(EsportGeneratorModel esportGeneratorModel);
 }

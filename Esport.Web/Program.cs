@@ -1,6 +1,7 @@
 using Esport.Domain;
 using Esport.Infrastructure;
-using Esport.Web;
+using Esport.Web.Implementations;
+using Esport.Web.Interfaces;
 using Esport.Web.Mappings;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,10 +9,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddControllers();
 builder.Services.AddScoped<IEsportRepository, EsportRepository>();
 builder.Services.AddAutoMapper(typeof(EsportEventMappingProfile));
-builder.Services.AddControllers();
-builder.Services.AddSingleton<IWebSocketService, WebSocketService>();
+builder.Services.AddSingleton<IWebSocketAllEventsService, WebSocketAllEventService>();
+builder.Services.AddSingleton<IWebSocketSpecifiedEventService, WebSocketSpecifiedEventService>();
 
 builder.Services.AddDbContext<EsportDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("PostgresConnection")));

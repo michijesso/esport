@@ -1,18 +1,19 @@
 namespace Esport.Web.Controllers;
 
-using System.Net.WebSockets;
-using AutoMapper;
+using Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Route("api/")]
 public class EsportController : ControllerBase
 {
-    private readonly IWebSocketService _webSocketService;
+    private readonly IWebSocketSpecifiedEventService _webSocketSpecifiedEventService;
+    private readonly IWebSocketAllEventsService _webSocketAllEventsService;
 
-    public EsportController(IWebSocketService webSocketService)
+    public EsportController(IWebSocketSpecifiedEventService webSocketSpecifiedEventService, IWebSocketAllEventsService webSocketAllEventsService)
     {
-        _webSocketService = webSocketService;
+        _webSocketSpecifiedEventService = webSocketSpecifiedEventService;
+        _webSocketAllEventsService = webSocketAllEventsService;
     }
 
     [HttpGet("ws/getEventById/{eventId}")]
@@ -21,7 +22,7 @@ public class EsportController : ControllerBase
         if (HttpContext.WebSockets.IsWebSocketRequest)
         {
             using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-            await _webSocketService.HandleWebSocketForSpecifiedEventAsync(webSocket, eventId);
+            await _webSocketSpecifiedEventService.HandleWebSocketForSpecifiedEventAsync(webSocket, eventId);
         }
         else
         {
@@ -35,7 +36,7 @@ public class EsportController : ControllerBase
         if (HttpContext.WebSockets.IsWebSocketRequest)
         {
             using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-            await _webSocketService.HandleWebSocketForAllEventsAsync(webSocket);
+            await _webSocketAllEventsService.HandleWebSocketForAllEventsAsync(webSocket);
         }
         else
         {
