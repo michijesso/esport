@@ -23,7 +23,7 @@ public class KafkaMessageBus : IMessageBus, IDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Ошибка при отправке сообщения: {ex.Message}");
+            Console.WriteLine($"Error when sending a message: {ex.Message}");
             throw;
         }
     }

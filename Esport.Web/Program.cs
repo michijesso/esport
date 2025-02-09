@@ -1,5 +1,4 @@
 using Esport.Domain;
-using Esport.Domain.Models;
 using Esport.Infrastructure;
 using Esport.Web;
 using Esport.Web.Mappings;
@@ -9,7 +8,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddScoped<IEsportRepository, EsportRepository>();
 builder.Services.AddAutoMapper(typeof(EsportEventMappingProfile));
 builder.Services.AddControllers();
